@@ -1,347 +1,283 @@
 <!DOCTYPE html>
 <html lang="bn">
 <head>
-  <meta charset="UTF-8" />
+  <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Gemini AI Studio Toolkit</title>
-  <link rel="stylesheet" href="styles.css"/>
   <link href="https://fonts.googleapis.com/css2?family=Google+Sans:wght@400;500;700&display=swap" rel="stylesheet"/>
   <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet"/>
+  <link rel="stylesheet" href="styles.css"/>
 </head>
 <body>
-  <div class="app-container">
-    <!-- Sidebar -->
-    <aside class="sidebar">
-      <div class="sidebar-header">
-        <img src="https://www.gstatic.com/lamda/images/gemini_sparkle_v002_d4735304ff6292a690345.svg" alt="Gemini" class="gemini-logo"/>
-        <span class="sidebar-title">Gemini Toolkit</span>
-      </div>
-      <nav class="sidebar-nav">
-        <button class="nav-item active" onclick="showSection('audio')">
-          <span class="material-icons">mic</span> Audio Transcribe
-        </button>
-        <button class="nav-item" onclick="showSection('video')">
-          <span class="material-icons">video_library</span> Video Analyze
-        </button>
-        <button class="nav-item" onclick="showSection('fast')">
-          <span class="material-icons">bolt</span> Fast Response
-        </button>
-        <button class="nav-item" onclick="showSection('image-analyze')">
-          <span class="material-icons">document_scanner</span> Image Analyze
-        </button>
-        <button class="nav-item" onclick="showSection('image-gen')">
-          <span class="material-icons">image</span> Image Generate
-        </button>
-        <button class="nav-item" onclick="showSection('video-gen')">
-          <span class="material-icons">video_spark</span> Video Generate
-        </button>
-        <button class="nav-item" onclick="showSection('chatbot')">
-          <span class="material-icons">voice_chat</span> AI Chatbot
-        </button>
-        <button class="nav-item" onclick="showSection('search')">
-          <span class="material-icons">google</span> Google Search
-        </button>
-        <button class="nav-item" onclick="showSection('tts')">
-          <span class="material-icons">audio_spark</span> Text to Speech
-        </button>
-        <button class="nav-item" onclick="showSection('music')">
-          <span class="material-icons">music_note</span> AI Music
-        </button>
-        <button class="nav-item" onclick="showSection('api-settings')">
-          <span class="material-icons">settings</span> API Settings
-        </button>
-      </nav>
-    </aside>
+<div class="app-container">
 
-    <!-- Main Content -->
-    <main class="main-content">
-      <div class="top-bar">
-        <h1 id="section-title">🎙️ Audio Transcription</h1>
-        <div class="model-badge" id="model-badge">gemini-2.0-flash</div>
-      </div>
+  <!-- SIDEBAR -->
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-header">
+      <span class="gemini-icon">✦</span>
+      <span class="sidebar-title">Gemini Toolkit</span>
+      <button class="sidebar-toggle" onclick="toggleSidebar()"><span class="material-icons">menu</span></button>
+    </div>
+    <nav class="sidebar-nav">
+      <button class="nav-item active" onclick="showSection('chat')"><span class="material-icons">chat</span><span>AI Assistant</span></button>
+      <button class="nav-item" onclick="showSection('audio')"><span class="material-icons">mic</span><span>Audio Transcribe</span></button>
+      <button class="nav-item" onclick="showSection('video')"><span class="material-icons">video_library</span><span>Video Analyze</span></button>
+      <button class="nav-item" onclick="showSection('fast')"><span class="material-icons">bolt</span><span>Fast Response</span></button>
+      <button class="nav-item" onclick="showSection('image-analyze')"><span class="material-icons">document_scanner</span><span>Image Analyze</span></button>
+      <button class="nav-item" onclick="showSection('image-gen')"><span class="material-icons">image</span><span>Image Generate</span></button>
+      <button class="nav-item" onclick="showSection('tts')"><span class="material-icons">record_voice_over</span><span>Text to Speech</span></button>
+      <button class="nav-item" onclick="showSection('search')"><span class="material-icons">travel_explore</span><span>Google Search</span></button>
+      <button class="nav-item" onclick="showSection('huggingface')"><span class="material-icons">psychology</span><span>Hugging Face</span></button>
+      <button class="nav-item" onclick="showSection('api-settings')"><span class="material-icons">settings</span><span>API Settings</span></button>
+    </nav>
+  </aside>
 
-      <!-- Audio Transcribe -->
-      <section id="section-audio" class="section active">
-        <div class="card">
-          <p class="desc">অডিও ফাইল আপলোড করুন বা রেকর্ড করুন — Gemini স্বয়ংক্রিয়ভাবে টেক্সটে রূপান্তর করবে।</p>
-          <div class="upload-area" id="audio-drop">
-            <span class="material-icons large-icon">mic</span>
-            <p>অডিও ফাইল এখানে drag করুন অথবা</p>
-            <input type="file" id="audio-file" accept="audio/*" hidden/>
-            <button class="btn-primary" onclick="document.getElementById('audio-file').click()">ফাইল বেছে নিন</button>
-          </div>
-          <div class="or-divider">অথবা</div>
-          <button class="btn-secondary" id="record-btn" onclick="toggleRecording()">
-            <span class="material-icons">fiber_manual_record</span> লাইভ রেকর্ড শুরু করুন
-          </button>
-          <div class="prompt-area">
-            <label>অতিরিক্ত নির্দেশনা (optional)</label>
-            <textarea id="audio-prompt" placeholder="যেমন: বাংলায় transcribe করো, punctuation যোগ করো..."></textarea>
-          </div>
-          <button class="btn-run" onclick="runAudioTranscribe()">
-            <span class="material-icons">play_arrow</span> Transcribe করুন
-          </button>
-          <div class="output-area" id="audio-output"></div>
-        </div>
-      </section>
+  <!-- MAIN -->
+  <main class="main-content">
+    <div class="top-bar">
+      <h1 id="section-title">🤖 AI Assistant</h1>
+      <span class="model-badge" id="model-badge">gemini-2.0-flash</span>
+    </div>
 
-      <!-- Video Analyze -->
-      <section id="section-video" class="section">
-        <div class="card">
-          <p class="desc">ভিডিও আপলোড করুন — Gemini 2.5 Pro বিশ্লেষণ করে সারসংক্ষেপ দেবে।</p>
-          <div class="upload-area">
-            <span class="material-icons large-icon">video_library</span>
-            <input type="file" id="video-file" accept="video/*" hidden/>
-            <button class="btn-primary" onclick="document.getElementById('video-file').click()">ভিডিও বেছে নিন</button>
-            <p id="video-filename" class="file-name"></p>
-          </div>
-          <div class="prompt-area">
-            <label>কী জানতে চান?</label>
-            <textarea id="video-prompt" placeholder="যেমন: এই ভিডিওর সারসংক্ষেপ দাও, মূল পয়েন্টগুলো বলো..."></textarea>
-          </div>
-          <button class="btn-run" onclick="runVideoAnalyze()">
-            <span class="material-icons">play_arrow</span> বিশ্লেষণ করুন
-          </button>
-          <div class="output-area" id="video-output"></div>
-        </div>
-      </section>
-
-      <!-- Fast Response -->
-      <section id="section-fast" class="section">
-        <div class="card">
-          <p class="desc">Gemini 2.0 Flash-Lite দিয়ে অত্যন্ত দ্রুত উত্তর পান — চ্যাটবট ও অ্যাপের জন্য আদর্শ।</p>
-          <div class="prompt-area">
-            <label>আপনার প্রশ্ন লিখুন</label>
-            <textarea id="fast-prompt" placeholder="যেকোনো প্রশ্ন করুন..." rows="4"></textarea>
-          </div>
-          <button class="btn-run" onclick="runFastResponse()">
-            <span class="material-icons">bolt</span> দ্রুত উত্তর নিন
-          </button>
-          <div class="output-area" id="fast-output"></div>
-        </div>
-      </section>
-
-      <!-- Image Analyze -->
-      <section id="section-image-analyze" class="section">
-        <div class="card">
-          <p class="desc">ছবি আপলোড করুন — Gemini 2.5 Pro বিশ্লেষণ করে বিস্তারিত বলবে।</p>
-          <div class="upload-area">
-            <span class="material-icons large-icon">document_scanner</span>
-            <input type="file" id="image-file" accept="image/*" hidden/>
-            <button class="btn-primary" onclick="document.getElementById('image-file').click()">ছবি বেছে নিন</button>
-            <img id="image-preview" class="preview-img" style="display:none"/>
-          </div>
-          <div class="prompt-area">
-            <label>কী জানতে চান?</label>
-            <textarea id="image-prompt" placeholder="যেমন: এই ছবিতে কী আছে? টেক্সট পড়ো, চার্ট ব্যাখ্যা করো..."></textarea>
-          </div>
-          <button class="btn-run" onclick="runImageAnalyze()">
-            <span class="material-icons">play_arrow</span> বিশ্লেষণ করুন
-          </button>
-          <div class="output-area" id="image-analyze-output"></div>
-        </div>
-      </section>
-
-      <!-- Image Generate -->
-      <section id="section-image-gen" class="section">
-        <div class="card">
-          <p class="desc">টেক্সট প্রম্পট দিয়ে Imagen 3 দিয়ে উচ্চমানের ছবি তৈরি করুন।</p>
-          <div class="prompt-area">
-            <label>ছবির বিবরণ লিখুন</label>
-            <textarea id="image-gen-prompt" placeholder="যেমন: A beautiful sunset over the mountains in photorealistic style..." rows="4"></textarea>
-          </div>
-          <div class="options-row">
-            <div class="option-group">
-              <label>Aspect Ratio</label>
-              <select id="aspect-ratio">
-                <option value="1:1">1:1 (Square)</option>
-                <option value="16:9">16:9 (Landscape)</option>
-                <option value="9:16">9:16 (Portrait)</option>
-                <option value="4:3">4:3 (Standard)</option>
-                <option value="3:4">3:4 (Tall)</option>
-              </select>
-            </div>
-            <div class="option-group">
-              <label>Number of Images</label>
-              <select id="image-count">
-                <option value="1">1</option>
-                <option value="2">2</option>
-                <option value="4">4</option>
-              </select>
+    <!-- ===== CHAT / AI ASSISTANT ===== -->
+    <section id="section-chat" class="section active">
+      <div class="chat-wrap">
+        <div class="chat-messages" id="chat-messages">
+          <div class="chat-bubble bot">
+            <span class="bot-icon">✦</span>
+            <div class="bubble-text">
+              আমি Gemini AI Assistant! আমাকে যা চান তাই করতে বলুন — API add করা, code লেখা, প্রশ্ন জিজ্ঞেস করা সব পারি।<br><br>
+              <b>কমান্ড উদাহরণ:</b><br>
+              • "Hugging Face API add করো: hf_xxxx"<br>
+              • "OpenAI API add করো: sk-xxxx"<br>
+              • "image analyze করো" (ছবি attach করুন)<br>
+              • "এই কোডটা explain করো"
             </div>
           </div>
-          <button class="btn-run" onclick="runImageGen()">
-            <span class="material-icons">image</span> ছবি তৈরি করুন
-          </button>
-          <div class="image-grid" id="image-gen-output"></div>
         </div>
-      </section>
-
-      <!-- Video Generate -->
-      <section id="section-video-gen" class="section">
-        <div class="card">
-          <p class="desc">টেক্সট প্রম্পট দিয়ে Veo 3 দিয়ে ভিডিও তৈরি করুন।</p>
-          <div class="prompt-area">
-            <label>ভিডিওর বিবরণ লিখুন</label>
-            <textarea id="video-gen-prompt" placeholder="যেমন: A cat playing piano in a cozy room, cinematic style..." rows="4"></textarea>
-          </div>
-          <div class="options-row">
-            <div class="option-group">
-              <label>Duration</label>
-              <select id="video-duration">
-                <option value="5">5 seconds</option>
-                <option value="8">8 seconds</option>
-              </select>
-            </div>
-            <div class="option-group">
-              <label>Aspect Ratio</label>
-              <select id="video-ratio">
-                <option value="16:9">16:9</option>
-                <option value="9:16">9:16</option>
-              </select>
-            </div>
-          </div>
-          <button class="btn-run" onclick="runVideoGen()">
-            <span class="material-icons">video_spark</span> ভিডিও তৈরি করুন
-          </button>
-          <div class="output-area" id="video-gen-output"></div>
-        </div>
-      </section>
-
-      <!-- AI Chatbot -->
-      <section id="section-chatbot" class="section">
-        <div class="card">
-          <p class="desc">Gemini দিয়ে context-aware চ্যাটবট — পূর্বের কথোপকথন মনে রাখে।</p>
-          <div class="chat-container" id="chat-messages">
-            <div class="chat-bubble bot">👋 আমি Gemini AI! আপনাকে কীভাবে সাহায্য করতে পারি?</div>
+        <div class="chat-input-area">
+          <div class="attach-preview" id="attach-preview" style="display:none">
+            <img id="attach-img" style="max-height:80px;border-radius:8px"/>
+            <button onclick="clearAttachment()" class="clear-attach">✕</button>
           </div>
           <div class="chat-input-row">
-            <input type="text" id="chat-input" placeholder="মেসেজ লিখুন..." onkeypress="if(event.key==='Enter') sendChat()"/>
-            <button class="btn-send" onclick="sendChat()"><span class="material-icons">send</span></button>
-          </div>
-        </div>
-      </section>
-
-      <!-- Google Search -->
-      <section id="section-search" class="section">
-        <div class="card">
-          <p class="desc">Google Search Grounding দিয়ে রিয়েল-টাইম তথ্য সহ উত্তর পান।</p>
-          <div class="prompt-area">
-            <label>আপনার প্রশ্ন</label>
-            <textarea id="search-prompt" placeholder="যেমন: আজকের আবহাওয়া কেমন? সর্বশেষ AI খবর কী?..." rows="3"></textarea>
-          </div>
-          <button class="btn-run" onclick="runGoogleSearch()">
-            <span class="material-icons">google</span> Search করুন
-          </button>
-          <div class="output-area" id="search-output"></div>
-        </div>
-      </section>
-
-      <!-- Text to Speech -->
-      <section id="section-tts" class="section">
-        <div class="card">
-          <p class="desc">টেক্সটকে প্রাকৃতিক ভয়েসে রূপান্তর করুন Gemini TTS দিয়ে।</p>
-          <div class="prompt-area">
-            <label>টেক্সট লিখুন</label>
-            <textarea id="tts-text" placeholder="যে টেক্সটটি পড়তে চান সেটি এখানে লিখুন..." rows="5"></textarea>
-          </div>
-          <div class="options-row">
-            <div class="option-group">
-              <label>Voice</label>
-              <select id="tts-voice">
-                <option value="Aoede">Aoede (Female)</option>
-                <option value="Charon">Charon (Male)</option>
-                <option value="Fenrir">Fenrir (Male)</option>
-                <option value="Kore">Kore (Female)</option>
-                <option value="Puck">Puck (Male)</option>
-              </select>
-            </div>
-            <div class="option-group">
-              <label>Language</label>
-              <select id="tts-lang">
-                <option value="bn-BD">বাংলা</option>
-                <option value="en-US">English</option>
-                <option value="hi-IN">हिंदी</option>
-              </select>
-            </div>
-          </div>
-          <button class="btn-run" onclick="runTTS()">
-            <span class="material-icons">volume_up</span> ভয়েস তৈরি করুন
-          </button>
-          <div class="output-area" id="tts-output"></div>
-        </div>
-      </section>
-
-      <!-- AI Music -->
-      <section id="section-music" class="section">
-        <div class="card">
-          <p class="desc">Lyria দিয়ে AI মিউজিক জেনারেট করুন।</p>
-          <div class="prompt-area">
-            <label>মিউজিকের বিবরণ</label>
-            <textarea id="music-prompt" placeholder="যেমন: Calm lo-fi music with piano, 120 BPM, relaxing mood..." rows="4"></textarea>
-          </div>
-          <div class="options-row">
-            <div class="option-group">
-              <label>Genre</label>
-              <select id="music-genre">
-                <option value="lofi">Lo-Fi</option>
-                <option value="classical">Classical</option>
-                <option value="jazz">Jazz</option>
-                <option value="ambient">Ambient</option>
-                <option value="pop">Pop</option>
-              </select>
-            </div>
-            <div class="option-group">
-              <label>Duration</label>
-              <select id="music-duration">
-                <option value="30">30s</option>
-                <option value="60">60s</option>
-                <option value="120">2min</option>
-              </select>
-            </div>
-          </div>
-          <button class="btn-run" onclick="runMusicGen()">
-            <span class="material-icons">music_note</span> মিউজিক তৈরি করুন
-          </button>
-          <div class="output-area" id="music-output"></div>
-        </div>
-      </section>
-
-      <!-- API Settings -->
-      <section id="section-api-settings" class="section">
-        <div class="card">
-          <h2>⚙️ API Configuration</h2>
-          <p class="desc">সব Gemini API key এবং Firebase config এখানে সেট করুন।</p>
-          <div class="api-form">
-            <div class="form-group">
-              <label>🔑 Gemini API Key</label>
-              <input type="password" id="gemini-key" placeholder="AIza..."/>
-              <small>Google AI Studio থেকে নিন: <a href="https://aistudio.google.com/apikey" target="_blank">aistudio.google.com</a></small>
-            </div>
-            <div class="form-group">
-              <label>🔥 Firebase API Key</label>
-              <input type="password" id="firebase-key" placeholder="Firebase config..."/>
-            </div>
-            <div class="form-group">
-              <label>🎵 Lyria API Endpoint</label>
-              <input type="text" id="lyria-endpoint" placeholder="https://..."/>
-            </div>
-            <div class="form-group">
-              <label>🎬 Veo 3 Project ID</label>
-              <input type="text" id="veo-project" placeholder="your-gcp-project-id"/>
-            </div>
-            <button class="btn-run" onclick="saveApiKeys()">
-              <span class="material-icons">save</span> সেভ করুন
+            <button class="attach-btn" onclick="document.getElementById('chat-file').click()" title="ফাইল attach করুন">
+              <span class="material-icons">attach_file</span>
             </button>
-            <div id="api-save-msg" class="success-msg" style="display:none">✅ API keys সেভ হয়েছে!</div>
+            <input type="file" id="chat-file" accept="image/*,audio/*" hidden onchange="handleAttach(this)"/>
+            <textarea id="chat-input" placeholder="যেকোনো প্রশ্ন বা কমান্ড লিখুন..." rows="1" onkeydown="handleChatKey(event)" oninput="autoResize(this)"></textarea>
+            <button class="send-btn" onclick="sendChat()"><span class="material-icons">send</span></button>
           </div>
         </div>
-      </section>
+      </div>
+    </section>
 
-    </main>
-  </div>
+    <!-- ===== AUDIO ===== -->
+    <section id="section-audio" class="section">
+      <div class="card">
+        <p class="desc">🎙️ অডিও ফাইল আপলোড করুন — Gemini স্বয়ংক্রিয়ভাবে টেক্সটে রূপান্তর করবে।</p>
+        <div class="upload-zone" onclick="document.getElementById('audio-file').click()">
+          <span class="material-icons" style="font-size:48px;color:var(--primary)">mic</span>
+          <p>অডিও ফাইল drag করুন বা click করুন</p>
+          <input type="file" id="audio-file" accept="audio/*" hidden onchange="showFileName(this,'audio-name')"/>
+          <p id="audio-name" class="file-name"></p>
+        </div>
+        <div class="form-group">
+          <label>নির্দেশনা (optional)</label>
+          <textarea id="audio-prompt" placeholder="যেমন: বাংলায় transcribe করো..." rows="2"></textarea>
+        </div>
+        <button class="btn-run" onclick="runAudioTranscribe()"><span class="material-icons">play_arrow</span> Transcribe</button>
+        <div class="output-box" id="audio-output">আউটপুট এখানে দেখাবে...</div>
+        <button class="btn-copy" onclick="copyOutput('audio-output')"><span class="material-icons">content_copy</span> Copy</button>
+      </div>
+    </section>
 
-  <script src="config.js"></script>
-  <script src="app.js"></script>
+    <!-- ===== VIDEO ANALYZE ===== -->
+    <section id="section-video" class="section">
+      <div class="card">
+        <p class="desc">📹 ভিডিও আপলোড করুন — Gemini 2.5 Pro বিশ্লেষণ করবে।</p>
+        <div class="upload-zone" onclick="document.getElementById('video-file').click()">
+          <span class="material-icons" style="font-size:48px;color:var(--primary)">video_library</span>
+          <p>ভিডিও drag করুন বা click করুন (max 20MB)</p>
+          <input type="file" id="video-file" accept="video/*" hidden onchange="showFileName(this,'video-name')"/>
+          <p id="video-name" class="file-name"></p>
+        </div>
+        <div class="form-group">
+          <label>কী জানতে চান?</label>
+          <textarea id="video-prompt" placeholder="যেমন: এই ভিডিওর সারসংক্ষেপ দাও..." rows="2"></textarea>
+        </div>
+        <button class="btn-run" onclick="runVideoAnalyze()"><span class="material-icons">play_arrow</span> বিশ্লেষণ করুন</button>
+        <div class="output-box" id="video-output">আউটপুট এখানে দেখাবে...</div>
+        <button class="btn-copy" onclick="copyOutput('video-output')"><span class="material-icons">content_copy</span> Copy</button>
+      </div>
+    </section>
+
+    <!-- ===== FAST ===== -->
+    <section id="section-fast" class="section">
+      <div class="card">
+        <p class="desc">⚡ Gemini Flash-Lite দিয়ে অত্যন্ত দ্রুত উত্তর পান।</p>
+        <div class="form-group">
+          <label>প্রশ্ন লিখুন</label>
+          <textarea id="fast-prompt" placeholder="যেকোনো প্রশ্ন..." rows="5"></textarea>
+        </div>
+        <button class="btn-run" onclick="runFast()"><span class="material-icons">bolt</span> দ্রুত উত্তর</button>
+        <div class="output-box" id="fast-output">আউটপুট এখানে দেখাবে...</div>
+        <button class="btn-copy" onclick="copyOutput('fast-output')"><span class="material-icons">content_copy</span> Copy</button>
+      </div>
+    </section>
+
+    <!-- ===== IMAGE ANALYZE ===== -->
+    <section id="section-image-analyze" class="section">
+      <div class="card">
+        <p class="desc">🔍 ছবি আপলোড করুন — Gemini 2.5 Pro বিশ্লেষণ করবে।</p>
+        <div class="upload-zone" onclick="document.getElementById('img-analyze-file').click()">
+          <span class="material-icons" style="font-size:48px;color:var(--primary)">image_search</span>
+          <p>ছবি drag করুন বা click করুন</p>
+          <input type="file" id="img-analyze-file" accept="image/*" hidden onchange="previewImage(this,'img-preview')"/>
+          <img id="img-preview" style="display:none;max-height:150px;margin-top:12px;border-radius:8px"/>
+        </div>
+        <div class="form-group">
+          <label>কী জানতে চান?</label>
+          <textarea id="img-analyze-prompt" placeholder="যেমন: এই ছবিতে কী আছে? টেক্সট পড়ো..." rows="2"></textarea>
+        </div>
+        <button class="btn-run" onclick="runImageAnalyze()"><span class="material-icons">play_arrow</span> বিশ্লেষণ করুন</button>
+        <div class="output-box" id="img-analyze-output">আউটপুট এখানে দেখাবে...</div>
+        <button class="btn-copy" onclick="copyOutput('img-analyze-output')"><span class="material-icons">content_copy</span> Copy</button>
+      </div>
+    </section>
+
+    <!-- ===== IMAGE GENERATE ===== -->
+    <section id="section-image-gen" class="section">
+      <div class="card">
+        <p class="desc">🖼️ টেক্সট দিয়ে Imagen 3 দিয়ে ছবি তৈরি করুন।</p>
+        <div class="form-group">
+          <label>ছবির বিবরণ (English এ ভালো কাজ করে)</label>
+          <textarea id="img-gen-prompt" placeholder="A beautiful sunset over mountains, photorealistic..." rows="4"></textarea>
+        </div>
+        <div class="options-row">
+          <div class="form-group" style="flex:1">
+            <label>Aspect Ratio</label>
+            <select id="img-ratio">
+              <option value="1:1">1:1 Square</option>
+              <option value="16:9">16:9 Landscape</option>
+              <option value="9:16">9:16 Portrait</option>
+              <option value="4:3">4:3 Standard</option>
+            </select>
+          </div>
+          <div class="form-group" style="flex:1">
+            <label>সংখ্যা</label>
+            <select id="img-count">
+              <option value="1">1টি</option>
+              <option value="2">2টি</option>
+              <option value="4">4টি</option>
+            </select>
+          </div>
+        </div>
+        <button class="btn-run" onclick="runImageGen()"><span class="material-icons">image</span> ছবি তৈরি করুন</button>
+        <div class="image-grid" id="img-gen-output"></div>
+      </div>
+    </section>
+
+    <!-- ===== TTS ===== -->
+    <section id="section-tts" class="section">
+      <div class="card">
+        <p class="desc">🔊 টেক্সটকে প্রাকৃতিক ভয়েসে রূপান্তর করুন।</p>
+        <div class="form-group">
+          <label>টেক্সট লিখুন</label>
+          <textarea id="tts-text" placeholder="যে টেক্সট শুনতে চান..." rows="5"></textarea>
+        </div>
+        <div class="options-row">
+          <div class="form-group" style="flex:1">
+            <label>Voice</label>
+            <select id="tts-voice">
+              <option value="Aoede">Aoede (Female)</option>
+              <option value="Charon">Charon (Male)</option>
+              <option value="Fenrir">Fenrir (Male)</option>
+              <option value="Kore">Kore (Female)</option>
+              <option value="Puck">Puck (Male)</option>
+            </select>
+          </div>
+        </div>
+        <button class="btn-run" onclick="runTTS()"><span class="material-icons">volume_up</span> ভয়েস তৈরি করুন</button>
+        <div class="output-box" id="tts-output">আউটপুট এখানে দেখাবে...</div>
+      </div>
+    </section>
+
+    <!-- ===== GOOGLE SEARCH ===== -->
+    <section id="section-search" class="section">
+      <div class="card">
+        <p class="desc">🔍 Google Search Grounding দিয়ে রিয়েল-টাইম তথ্য পান।</p>
+        <div class="form-group">
+          <label>আপনার প্রশ্ন</label>
+          <textarea id="search-prompt" placeholder="যেমন: আজকের AI খবর কী? বাংলাদেশের আবহাওয়া..." rows="3"></textarea>
+        </div>
+        <button class="btn-run" onclick="runSearch()"><span class="material-icons">travel_explore</span> Search করুন</button>
+        <div class="output-box" id="search-output">আউটপুট এখানে দেখাবে...</div>
+        <button class="btn-copy" onclick="copyOutput('search-output')"><span class="material-icons">content_copy</span> Copy</button>
+      </div>
+    </section>
+
+    <!-- ===== HUGGING FACE ===== -->
+    <section id="section-huggingface" class="section">
+      <div class="card">
+        <p class="desc">🤗 Hugging Face API দিয়ে ১০০,০০০+ AI model ব্যবহার করুন।</p>
+        <div class="form-group">
+          <label>Model ID (Hugging Face)</label>
+          <input type="text" id="hf-model" placeholder="যেমন: facebook/bart-large-cnn, gpt2, mistralai/Mistral-7B-v0.1" value="facebook/bart-large-cnn"/>
+        </div>
+        <div class="form-group">
+          <label>Task Type</label>
+          <select id="hf-task">
+            <option value="text-generation">Text Generation</option>
+            <option value="summarization">Summarization</option>
+            <option value="translation">Translation</option>
+            <option value="question-answering">Question Answering</option>
+            <option value="sentiment-analysis">Sentiment Analysis</option>
+            <option value="image-classification">Image Classification</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Input Text</label>
+          <textarea id="hf-input" placeholder="Text দিন..." rows="4"></textarea>
+        </div>
+        <button class="btn-run" onclick="runHuggingFace()"><span class="material-icons">psychology</span> Run Model</button>
+        <div class="output-box" id="hf-output">আউটপুট এখানে দেখাবে...</div>
+        <button class="btn-copy" onclick="copyOutput('hf-output')"><span class="material-icons">content_copy</span> Copy</button>
+      </div>
+    </section>
+
+    <!-- ===== API SETTINGS ===== -->
+    <section id="section-api-settings" class="section">
+      <div class="card">
+        <h2 style="margin-bottom:8px">⚙️ API Configuration</h2>
+        <p class="desc">সব API key এখানে manage করুন। Keys browser এ locally সেভ থাকে।</p>
+
+        <div class="api-list" id="api-list">
+          <!-- Dynamic API entries -->
+        </div>
+
+        <div class="add-api-box">
+          <h3>➕ নতুন API যোগ করুন</h3>
+          <div class="options-row">
+            <div class="form-group" style="flex:1">
+              <label>API নাম</label>
+              <input type="text" id="new-api-name" placeholder="যেমন: OpenAI, Anthropic, Stability AI"/>
+            </div>
+            <div class="form-group" style="flex:1">
+              <label>API Key</label>
+              <input type="password" id="new-api-key" placeholder="sk-xxxx বা hf_xxxx..."/>
+            </div>
+          </div>
+          <button class="btn-run" onclick="addNewApi()"><span class="material-icons">add</span> API যোগ করুন</button>
+        </div>
+
+        <div id="api-save-msg" class="success-msg" style="display:none">✅ সেভ হয়েছে!</div>
+      </div>
+    </section>
+
+  </main>
+</div>
+<script src="config.js"></script>
+<script src="app.js"></script>
 </body>
 </html>
