@@ -3,29 +3,27 @@
 // Fully fixed & enhanced | Author: Md Ridy
 // ============================================================
 
+const GROQ_PROXY = 'https://api.base44.com/api/apps/6a3df1561e6b5178cc327275/functions/groqProxy';
+
 // ---- STATE ----
 let chatHistory = [];
 let attachedFile = null;
 let attachedFileB64 = null;
 let attachedFileMime = null;
-let isRecording = false;
-let mediaRecorder = null;
-let audioChunks = [];
 
 // ---- INIT ----
 window.addEventListener('DOMContentLoaded', () => {
-  loadApiSettings();
   renderApiList();
 });
 
 // ============================================================
 // HELPERS
 // ============================================================
-function getKey(name = 'gemini_key') {
+function getKey(name) {
   return localStorage.getItem(name) || '';
 }
 
-function setOutput(id, text, cls = '') {
+function setOutput(id, text, cls) {
   const el = document.getElementById(id);
   if (!el) return;
   el.innerHTML = text;
@@ -49,7 +47,7 @@ function showToast(msg) {
     zIndex:9999, transition:'opacity 0.3s'
   });
   document.body.appendChild(t);
-  setTimeout(() => { t.style.opacity = '0'; setTimeout(() => t.remove(), 400); }, 2000);
+  setTimeout(() => { t.style.opacity = '0'; setTimeout(() => t.remove(), 400); }, 2500);
 }
 
 function showFileName(input, targetId) {
@@ -75,16 +73,20 @@ function fileToBase64(file) {
 }
 
 // ============================================================
-// GEMINI API CALL
+// GEMINI API
 // ============================================================
-async function callGemini(model, contents, extra = {}) {
+async function callGemini(model, contents, extra) {
+  extra = extra || {};
   const key = getKey('gemini_key');
-  if (!key) { showSection('api-settings'); throw new Error('Gemini API Key নেই! API Settings এ দিন।'); }
+  if (!key) {
+    showSection('api-settings');
+    throw new Error('Gemini API Key নেই! API Settings এ দিন।');
+  }
 
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${key}`;
+  const url = 'https://generativelanguage.googleapis.com/v1beta/models/' + model + ':generateContent?key=' + key;
   const body = {
-    contents,
-    generationConfig: { temperature: 0.7, maxOutputTokens: 8192, ...extra }
+    contents: contents,
+    generationConfig: Object.assign({ temperature: 0.7, maxOutputTokens: 8192 }, extra)
   };
 
   const res = await fetch(url, {
@@ -94,35 +96,39 @@ async function callGemini(model, contents, extra = {}) {
   });
 
   const data = await res.json();
-  if (!res.ok) throw new Error(data.error?.message || 'Gemini API Error');
-  return data.candidates?.[0]?.content?.parts?.map(p => p.text).filter(Boolean).join('\n') || 'কোনো উত্তর পাওয়া যায়নি।';
+  if (!res.ok) throw new Error(data.error && data.error.message ? data.error.message : 'Gemini API Error');
+  const parts = data.candidates && data.candidates[0] && data.candidates[0].content && data.candidates[0].content.parts;
+  return (parts || []).map(function(p) { return p.text; }).filter(Boolean).join('\n') || 'কোনো উত্তর পাওয়া যায়নি।';
 }
 
 // ============================================================
 // NAVIGATION
 // ============================================================
 const SECTION_META = {
-  chat: { title: '🤖 AI Assistant', model: 'gemini-2.0-flash' },
-  audio: { title: '🎙️ Audio Transcribe', model: 'gemini-2.0-flash' },
-  video: { title: '📹 Video Analyze', model: 'gemini-2.5-pro' },
-  fast: { title: '⚡ Fast Response', model: 'gemini-2.0-flash-lite' },
+  'chat': { title: '🤖 AI Assistant', model: 'gemini-2.0-flash' },
+  'audio': { title: '🎙️ Audio Transcribe', model: 'gemini-2.0-flash' },
+  'video': { title: '📹 Video Analyze', model: 'gemini-2.5-pro' },
+  'fast': { title: '⚡ Fast Response', model: 'gemini-2.0-flash-lite' },
   'image-analyze': { title: '🔍 Image Analyze', model: 'gemini-2.5-pro' },
   'image-gen': { title: '🖼️ Image Generate', model: 'imagen-3.0' },
-  tts: { title: '🔊 Text to Speech', model: 'gemini-tts' },
-  search: { title: '🔍 Google Search', model: 'gemini + search' },
-  huggingface: { title: '🤗 Hugging Face', model: 'hf-inference' },
+  'tts': { title: '🔊 Text to Speech', model: 'gemini-tts' },
+  'search': { title: '🔍 Google Search', model: 'gemini + search' },
+  'huggingface': { title: '🤗 Hugging Face', model: 'hf-inference' },
+  'groq': { title: '⚡ Groq AI', model: 'llama3-70b-8192' },
   'api-settings': { title: '⚙️ API Settings', model: 'config' }
 };
 
 function showSection(name) {
-  document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
-  document.querySelectorAll('.nav-item').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('.section').forEach(function(s) { s.classList.remove('active'); });
+  document.querySelectorAll('.nav-item').forEach(function(b) { b.classList.remove('active'); });
 
   const sec = document.getElementById('section-' + name);
   if (sec) sec.classList.add('active');
 
-  document.querySelectorAll('.nav-item').forEach(btn => {
-    if (btn.getAttribute('onclick')?.includes(`'${name}'`)) btn.classList.add('active');
+  document.querySelectorAll('.nav-item').forEach(function(btn) {
+    if (btn.getAttribute('onclick') && btn.getAttribute('onclick').indexOf("'" + name + "'") !== -1) {
+      btn.classList.add('active');
+    }
   });
 
   const meta = SECTION_META[name] || {};
@@ -135,7 +141,7 @@ function toggleSidebar() {
 }
 
 // ============================================================
-// CHAT — AI ASSISTANT (smart command handler)
+// CHAT
 // ============================================================
 function handleChatKey(e) {
   if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendChat(); }
@@ -157,24 +163,26 @@ function handleAttach(input) {
     img.src = URL.createObjectURL(file);
     preview.style.display = 'flex';
   }
-  fileToBase64(file).then(b64 => attachedFileB64 = b64);
+  fileToBase64(file).then(function(b64) { attachedFileB64 = b64; });
 }
 
 function clearAttachment() {
-  attachedFile = null; attachedFileB64 = null; attachedFileMime = null;
+  attachedFile = null;
+  attachedFileB64 = null;
+  attachedFileMime = null;
   document.getElementById('attach-preview').style.display = 'none';
   document.getElementById('chat-file').value = '';
 }
 
-function addChatBubble(role, text, imgSrc = null) {
+function addChatBubble(role, text, imgSrc) {
   const wrap = document.getElementById('chat-messages');
   const bubble = document.createElement('div');
   bubble.className = 'chat-bubble ' + role;
 
   if (role === 'bot') {
-    bubble.innerHTML = `<div class="bot-icon">✦</div><div class="bubble-text">${text}</div>`;
+    bubble.innerHTML = '<div class="bot-icon">✦</div><div class="bubble-text">' + text + '</div>';
   } else {
-    bubble.innerHTML = `<div class="bubble-text">${text}${imgSrc ? `<br/><img src="${imgSrc}" class="bubble-img"/>` : ''}</div>`;
+    bubble.innerHTML = '<div class="bubble-text">' + text + (imgSrc ? '<br/><img src="' + imgSrc + '" class="bubble-img"/>' : '') + '</div>';
   }
   wrap.appendChild(bubble);
   wrap.scrollTop = wrap.scrollHeight;
@@ -186,7 +194,7 @@ function addTypingIndicator() {
   const bubble = document.createElement('div');
   bubble.className = 'chat-bubble bot';
   bubble.id = 'typing-indicator';
-  bubble.innerHTML = `<div class="bot-icon">✦</div><div class="bubble-text"><div class="typing-dots"><span></span><span></span><span></span></div></div>`;
+  bubble.innerHTML = '<div class="bot-icon">✦</div><div class="bubble-text"><div class="typing-dots"><span></span><span></span><span></span></div></div>';
   wrap.appendChild(bubble);
   wrap.scrollTop = wrap.scrollHeight;
 }
@@ -202,19 +210,19 @@ async function sendChat() {
   if (!msg && !attachedFile) return;
 
   const displayMsg = msg || '📎 ফাইল পাঠানো হয়েছে';
-  const imgPreview = attachedFile?.type.startsWith('image/') ? URL.createObjectURL(attachedFile) : null;
+  const imgPreview = (attachedFile && attachedFile.type.startsWith('image/')) ? URL.createObjectURL(attachedFile) : null;
   addChatBubble('user', displayMsg, imgPreview);
   input.value = '';
   input.style.height = 'auto';
 
-  // Check for API add command
+  // API add command detection
   const apiMatch = msg.match(/(.+?)\s*api\s*(?:add|যোগ|দাও|key)\s*(?:করো|:)?\s*[:：]?\s*([a-zA-Z0-9_\-\.]+)/i);
   if (apiMatch) {
     const apiName = apiMatch[1].trim();
     const apiKey = apiMatch[2].trim();
     saveApiKey(apiName, apiKey);
     clearAttachment();
-    addChatBubble('bot', `✅ <b>${apiName}</b> API key সেভ হয়েছে!\n\nKey: <code>${apiKey.slice(0,8)}...</code>\n\nAPI Settings এ গিয়ে সব keys দেখতে পাবে।`);
+    addChatBubble('bot', '✅ <b>' + apiName + '</b> API key সেভ হয়েছে!<br/><br/>Key: <code>' + apiKey.slice(0,10) + '...</code><br/><br/>⚙️ API Settings এ সব keys দেখতে পাবে।');
     return;
   }
 
@@ -226,8 +234,7 @@ async function sendChat() {
       parts.unshift({ inline_data: { mime_type: attachedFileMime, data: attachedFileB64 } });
     }
 
-    chatHistory.push({ role: 'user', parts });
-    // Keep last 10 turns
+    chatHistory.push({ role: 'user', parts: parts });
     if (chatHistory.length > 20) chatHistory = chatHistory.slice(-20);
 
     const result = await callGemini('gemini-2.0-flash', chatHistory);
@@ -340,30 +347,30 @@ async function runImageGen() {
   grid.innerHTML = '<p style="color:var(--primary);padding:12px">⏳ ছবি তৈরি হচ্ছে...</p>';
 
   try {
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/imagen-3.0-generate-002:predict?key=${key}`;
+    const url = 'https://generativelanguage.googleapis.com/v1beta/models/imagen-3.0-generate-002:predict?key=' + key;
     const res = await fetch(url, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        instances: [{ prompt }],
+        instances: [{ prompt: prompt }],
         parameters: { sampleCount: count, aspectRatio: ratio, safetyFilterLevel: 'BLOCK_ONLY_HIGH' }
       })
     });
     const data = await res.json();
-    if (!res.ok) throw new Error(data.error?.message || 'Imagen API Error');
+    if (!res.ok) throw new Error(data.error && data.error.message ? data.error.message : 'Imagen API Error');
 
     grid.innerHTML = '';
-    (data.predictions || []).forEach(pred => {
+    (data.predictions || []).forEach(function(pred) {
       if (pred.bytesBase64Encoded) {
         const img = document.createElement('img');
-        img.src = `data:image/png;base64,${pred.bytesBase64Encoded}`;
-        img.onclick = () => window.open(img.src);
+        img.src = 'data:image/png;base64,' + pred.bytesBase64Encoded;
+        img.onclick = function() { window.open(img.src); };
         grid.appendChild(img);
       }
     });
     if (!grid.children.length) grid.innerHTML = '<p style="color:var(--error)">কোনো ছবি পাওয়া যায়নি।</p>';
   } catch (e) {
-    grid.innerHTML = `<p style="color:var(--error)">❌ ${e.message}</p>`;
+    grid.innerHTML = '<p style="color:var(--error)">❌ ' + e.message + '</p>';
   }
 }
 
@@ -381,12 +388,12 @@ async function runTTS() {
   setOutput('tts-output', '🔊 ভয়েস তৈরি হচ্ছে...', 'loading');
 
   try {
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-tts:generateContent?key=${key}`;
+    const url = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-tts:generateContent?key=' + key;
     const res = await fetch(url, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        contents: [{ parts: [{ text }] }],
+        contents: [{ parts: [{ text: text }] }],
         generationConfig: {
           responseModalities: ['AUDIO'],
           speechConfig: { voiceConfig: { prebuiltVoiceConfig: { voiceName: voice } } }
@@ -394,17 +401,17 @@ async function runTTS() {
       })
     });
     const data = await res.json();
-    if (!res.ok) throw new Error(data.error?.message || 'TTS API Error');
+    if (!res.ok) throw new Error(data.error && data.error.message ? data.error.message : 'TTS API Error');
 
-    const audioB64 = data.candidates?.[0]?.content?.parts?.[0]?.inlineData?.data;
+    const c = data.candidates;
+    const audioB64 = c && c[0] && c[0].content && c[0].content.parts && c[0].content.parts[0] && c[0].content.parts[0].inlineData && c[0].content.parts[0].inlineData.data;
     if (!audioB64) throw new Error('Audio data পাওয়া যায়নি');
 
-    const blob = new Blob([Uint8Array.from(atob(audioB64), c => c.charCodeAt(0))], { type: 'audio/wav' });
+    const blob = new Blob([Uint8Array.from(atob(audioB64), function(c) { return c.charCodeAt(0); })], { type: 'audio/wav' });
     const audioUrl = URL.createObjectURL(blob);
-    document.getElementById('tts-output').innerHTML = `
-      <audio controls style="width:100%;margin-bottom:8px"><source src="${audioUrl}" type="audio/wav"/></audio>
-      <a href="${audioUrl}" download="tts-output.wav" style="color:var(--primary);font-size:13px">⬇️ Download করুন</a>
-    `;
+    document.getElementById('tts-output').innerHTML =
+      '<audio controls style="width:100%;margin-bottom:8px"><source src="' + audioUrl + '" type="audio/wav"/></audio>' +
+      '<a href="' + audioUrl + '" download="tts-output.wav" style="color:var(--primary);font-size:13px">⬇️ Download করুন</a>';
   } catch (e) {
     setOutput('tts-output', '❌ ' + e.message, 'error');
   }
@@ -423,7 +430,7 @@ async function runSearch() {
   setOutput('search-output', '🔍 Google Search করছি...', 'loading');
 
   try {
-    const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${key}`, {
+    const res = await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=' + key, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -432,8 +439,9 @@ async function runSearch() {
       })
     });
     const data = await res.json();
-    if (!res.ok) throw new Error(data.error?.message || 'Search API Error');
-    const text = data.candidates?.[0]?.content?.parts?.map(p => p.text).filter(Boolean).join('\n') || 'ফলাফল পাওয়া যায়নি।';
+    if (!res.ok) throw new Error(data.error && data.error.message ? data.error.message : 'Search API Error');
+    const parts = data.candidates && data.candidates[0] && data.candidates[0].content && data.candidates[0].content.parts;
+    const text = (parts || []).map(function(p) { return p.text; }).filter(Boolean).join('\n') || 'ফলাফল পাওয়া যায়নি।';
     setOutput('search-output', text);
   } catch (e) {
     setOutput('search-output', '❌ ' + e.message, 'error');
@@ -451,25 +459,21 @@ async function runHuggingFace() {
 
   const hfKey = getKey('huggingface_key');
   if (!hfKey) {
-    showToast('⚠️ Hugging Face API Key নেই! API Settings এ দিন।');
-    showSection('api-settings');
+    setOutput('hf-output', '❌ Hugging Face API Key নেই!\n\nAPI Settings এ গিয়ে key দিন।\nFree key: https://huggingface.co/settings/tokens', 'error');
     return;
   }
 
   setOutput('hf-output', '🤗 Model চলছে...', 'loading');
 
   try {
-    let body;
-    if (task === 'question-answering') {
-      body = { inputs: { question: input, context: input } };
-    } else {
-      body = { inputs: input };
-    }
+    const body = task === 'question-answering'
+      ? { inputs: { question: input, context: input } }
+      : { inputs: input };
 
-    const res = await fetch(`https://api-inference.huggingface.co/models/${model}`, {
+    const res = await fetch('https://api-inference.huggingface.co/models/' + model, {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${hfKey}`,
+        'Authorization': 'Bearer ' + hfKey,
         'Content-Type': 'application/json'
       },
       body: JSON.stringify(body)
@@ -480,7 +484,9 @@ async function runHuggingFace() {
 
     let output = '';
     if (Array.isArray(data)) {
-      output = data.map(d => d.generated_text || d.summary_text || d.translation_text || d.label || JSON.stringify(d)).join('\n\n');
+      output = data.map(function(d) {
+        return d.generated_text || d.summary_text || d.translation_text || d.label || JSON.stringify(d);
+      }).join('\n\n');
     } else if (data.generated_text) {
       output = data.generated_text;
     } else {
@@ -493,40 +499,69 @@ async function runHuggingFace() {
 }
 
 // ============================================================
-// API SETTINGS MANAGEMENT
+// GROQ AI — via Backend Proxy (CORS fixed!)
+// ============================================================
+async function runGroq() {
+  const prompt = document.getElementById('groq-prompt').value.trim();
+  const model = document.getElementById('groq-model').value;
+  if (!prompt) { showToast('⚠️ প্রশ্ন লিখুন'); return; }
+
+  const groq_key = getKey('groq_key');
+  if (!groq_key) {
+    setOutput('groq-output',
+      '❌ Groq API Key নেই!\n\n' +
+      'API Settings এ গিয়ে Groq key দিন।\n' +
+      'Free key পেতে: https://console.groq.com/keys',
+      'error');
+    return;
+  }
+
+  setOutput('groq-output', '⚡ Groq [' + model + '] চলছে...', 'loading');
+
+  try {
+    const res = await fetch(GROQ_PROXY, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ prompt: prompt, model: model, groq_key: groq_key })
+    });
+
+    const data = await res.json();
+    if (!res.ok || data.error) throw new Error(data.error || 'Groq proxy error');
+
+    setOutput('groq-output', '✅ [' + model + ']\n\n' + data.result);
+  } catch (e) {
+    setOutput('groq-output', '❌ ' + e.message, 'error');
+  }
+}
+
+// ============================================================
+// API SETTINGS
 // ============================================================
 const DEFAULT_APIS = [
   { name: 'Gemini (Google)', key: 'gemini_key', placeholder: 'AIza...' },
+  { name: 'Groq', key: 'groq_key', placeholder: 'gsk_...' },
   { name: 'Hugging Face', key: 'huggingface_key', placeholder: 'hf_...' },
   { name: 'OpenAI', key: 'openai_key', placeholder: 'sk-...' },
-  { name: 'Anthropic', key: 'anthropic_key', placeholder: 'sk-ant-...' },
+  { name: 'Anthropic (Claude)', key: 'anthropic_key', placeholder: 'sk-ant-...' },
   { name: 'Stability AI', key: 'stability_key', placeholder: 'sk-...' },
 ];
 
-function loadApiSettings() {
-  DEFAULT_APIS.forEach(api => {
-    const saved = localStorage.getItem(api.key);
-    const inp = document.getElementById('api-' + api.key);
-    if (inp && saved) inp.value = saved;
-  });
-}
-
 function saveApiKey(name, keyValue) {
-  // Try to match known APIs
   const lower = name.toLowerCase();
   let storageKey = lower.replace(/\s+/g, '_') + '_key';
   if (lower.includes('gemini') || lower.includes('google')) storageKey = 'gemini_key';
-  else if (lower.includes('hugging') || lower.includes('hf')) storageKey = 'huggingface_key';
+  else if (lower.includes('groq')) storageKey = 'groq_key';
+  else if (lower.includes('hugging') || lower === 'hf') storageKey = 'huggingface_key';
   else if (lower.includes('openai')) storageKey = 'openai_key';
-  else if (lower.includes('anthropic')) storageKey = 'anthropic_key';
+  else if (lower.includes('anthropic') || lower.includes('claude')) storageKey = 'anthropic_key';
   else if (lower.includes('stability')) storageKey = 'stability_key';
 
   localStorage.setItem(storageKey, keyValue);
-  // Also save with custom name
+
   const customs = JSON.parse(localStorage.getItem('custom_apis') || '[]');
-  const existing = customs.findIndex(c => c.name.toLowerCase() === name.toLowerCase());
-  if (existing >= 0) customs[existing] = { name, key: storageKey, value: keyValue };
-  else customs.push({ name, key: storageKey, value: keyValue });
+  const existing = customs.findIndex(function(c) { return c.name.toLowerCase() === name.toLowerCase(); });
+  if (existing >= 0) customs[existing] = { name: name, key: storageKey };
+  else customs.push({ name: name, key: storageKey });
   localStorage.setItem('custom_apis', JSON.stringify(customs));
   renderApiList();
 }
@@ -536,38 +571,40 @@ function renderApiList() {
   if (!list) return;
   list.innerHTML = '';
 
-  const allApis = [...DEFAULT_APIS];
+  const allApis = DEFAULT_APIS.slice();
   const customs = JSON.parse(localStorage.getItem('custom_apis') || '[]');
-  customs.forEach(c => {
-    if (!allApis.find(a => a.key === c.key)) allApis.push({ name: c.name, key: c.key });
+  customs.forEach(function(c) {
+    if (!allApis.find(function(a) { return a.key === c.key; })) {
+      allApis.push({ name: c.name, key: c.key, placeholder: 'key...' });
+    }
   });
 
-  allApis.forEach(api => {
+  allApis.forEach(function(api) {
     const val = localStorage.getItem(api.key) || '';
     const entry = document.createElement('div');
     entry.className = 'api-entry';
-    entry.innerHTML = `
-      <span class="api-entry-name">${api.name}</span>
-      <input type="password" style="flex:2;background:#0d1117;border:1px solid var(--border);border-radius:6px;color:var(--text);padding:6px 10px;font-size:12px;font-family:monospace"
-        placeholder="${api.placeholder || 'API key...'}"
-        value="${val}"
-        onchange="localStorage.setItem('${api.key}', this.value); showToast('✅ ${api.name} সেভ হয়েছে!')"
-      />
-      <button class="api-entry-del" onclick="deleteApi('${api.key}','${api.name}')" title="Delete">
-        <span class="material-icons" style="font-size:18px">delete</span>
-      </button>
-    `;
+    entry.innerHTML =
+      '<span class="api-entry-name">' + api.name + '</span>' +
+      '<input type="password" ' +
+        'style="flex:2;background:#0d1117;border:1px solid var(--border);border-radius:6px;color:var(--text);padding:6px 10px;font-size:12px;font-family:monospace" ' +
+        'placeholder="' + (api.placeholder || 'API key...') + '" ' +
+        'value="' + val + '" ' +
+        'onchange="localStorage.setItem(\'' + api.key + '\', this.value); showToast(\'✅ ' + api.name + ' সেভ হয়েছে!\')" ' +
+      '/>' +
+      '<button class="api-entry-del" onclick="deleteApi(\'' + api.key + '\',\'' + api.name + '\')" title="Delete">' +
+        '<span class="material-icons" style="font-size:18px">delete</span>' +
+      '</button>';
     list.appendChild(entry);
   });
 }
 
 function deleteApi(key, name) {
-  if (!confirm(`${name} API key মুছে দেবেন?`)) return;
+  if (!confirm(name + ' API key মুছে দেবেন?')) return;
   localStorage.removeItem(key);
   const customs = JSON.parse(localStorage.getItem('custom_apis') || '[]');
-  localStorage.setItem('custom_apis', JSON.stringify(customs.filter(c => c.key !== key)));
+  localStorage.setItem('custom_apis', JSON.stringify(customs.filter(function(c) { return c.key !== key; })));
   renderApiList();
-  showToast(`🗑️ ${name} মুছে গেছে`);
+  showToast('🗑️ ' + name + ' মুছে গেছে');
 }
 
 function addNewApi() {
@@ -580,109 +617,7 @@ function addNewApi() {
   document.getElementById('new-api-key').value = '';
 
   const msg = document.getElementById('api-save-msg');
-  msg.textContent = `✅ ${name} API সেভ হয়েছে!`;
+  msg.textContent = '✅ ' + name + ' API সেভ হয়েছে!';
   msg.style.display = 'block';
-  setTimeout(() => msg.style.display = 'none', 3000);
+  setTimeout(function() { msg.style.display = 'none'; }, 3000);
 }
-
-// ============================================================
-// GROQ API — Fast LLM (llama, mixtral, gemma)
-// ============================================================
-async function callGroq(prompt, model = 'llama3-8b-8192') {
-  const key = getKey('groq_key');
-  if (!key) {
-    showToast('⚠️ Groq API Key নেই! API Settings এ দিন।');
-    showSection('api-settings');
-    throw new Error('Groq API Key missing');
-  }
-
-  // Groq has CORS issues from browser — use a CORS proxy
-  const url = 'https://cors-anywhere.herokuapp.com/https://api.groq.com/openai/v1/chat/completions';
-
-  const res = await fetch(url, {
-    method: 'POST',
-    headers: {
-      'Authorization': `Bearer ${key}`,
-      'Content-Type': 'application/json',
-      'X-Requested-With': 'XMLHttpRequest'
-    },
-    body: JSON.stringify({
-      model,
-      messages: [{ role: 'user', content: prompt }],
-      temperature: 0.7,
-      max_tokens: 4096
-    })
-  });
-
-  const data = await res.json();
-  if (!res.ok) throw new Error(data.error?.message || 'Groq API Error');
-  return data.choices?.[0]?.message?.content || 'কোনো উত্তর পাওয়া যায়নি।';
-}
-
-// ============================================================
-// GROQ RUN — with Gemini fallback explanation
-// ============================================================
-async function runGroq() {
-  const prompt = document.getElementById('groq-prompt').value.trim();
-  const model = document.getElementById('groq-model').value;
-  if (!prompt) { showToast('⚠️ প্রশ্ন লিখুন'); return; }
-
-  const key = getKey('groq_key');
-  if (!key) {
-    setOutput('groq-output', '❌ Groq API Key পাওয়া যায়নি!\n\nAPI Settings এ গিয়ে Groq key দিন।\nGroq free key পেতে: https://console.groq.com', 'error');
-    return;
-  }
-
-  setOutput('groq-output', '⚡ Groq চলছে...', 'loading');
-
-  try {
-    // Direct Groq call with proper headers
-    const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${key}`,
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        model,
-        messages: [{ role: 'user', content: prompt }],
-        temperature: 0.7,
-        max_tokens: 4096
-      })
-    });
-
-    if (res.status === 0 || !res.ok) {
-      // CORS fallback — use Gemini to explain
-      const fallback = await callGemini('gemini-2.0-flash', [{
-        role: 'user',
-        parts: [{ text: `[Groq ${model} দিয়ে উত্তর দাও]: ${prompt}` }]
-      }]);
-      setOutput('groq-output', `⚠️ Groq CORS সমস্যা (browser limitation)। Gemini দিয়ে উত্তর:\n\n${fallback}`);
-      return;
-    }
-
-    const data = await res.json();
-    if (data.error) throw new Error(data.error.message);
-    const result = data.choices?.[0]?.message?.content || 'কোনো উত্তর পাওয়া যায়নি।';
-    setOutput('groq-output', `✅ [${model}]\n\n${result}`);
-  } catch (e) {
-    // If CORS error, use Gemini as fallback
-    if (e.message.includes('fetch') || e.message.includes('CORS') || e.message.includes('network')) {
-      try {
-        setOutput('groq-output', '⚠️ Groq browser CORS block। Gemini দিয়ে চেষ্টা করছি...', 'loading');
-        const fallback = await callGemini('gemini-2.0-flash', [{
-          role: 'user',
-          parts: [{ text: prompt }]
-        }]);
-        setOutput('groq-output', `⚠️ Groq CORS blocked (browser limitation)\nGemini fallback:\n\n${fallback}`);
-      } catch (e2) {
-        setOutput('groq-output', '❌ ' + e.message, 'error');
-      }
-    } else {
-      setOutput('groq-output', '❌ ' + e.message, 'error');
-    }
-  }
-}
-
-// Update SECTION_META for Groq
-SECTION_META['groq'] = { title: '⚡ Groq AI', model: 'llama3-70b-8192' };
