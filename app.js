@@ -584,3 +584,105 @@ function addNewApi() {
   msg.style.display = 'block';
   setTimeout(() => msg.style.display = 'none', 3000);
 }
+
+// ============================================================
+// GROQ API — Fast LLM (llama, mixtral, gemma)
+// ============================================================
+async function callGroq(prompt, model = 'llama3-8b-8192') {
+  const key = getKey('groq_key');
+  if (!key) {
+    showToast('⚠️ Groq API Key নেই! API Settings এ দিন।');
+    showSection('api-settings');
+    throw new Error('Groq API Key missing');
+  }
+
+  // Groq has CORS issues from browser — use a CORS proxy
+  const url = 'https://cors-anywhere.herokuapp.com/https://api.groq.com/openai/v1/chat/completions';
+
+  const res = await fetch(url, {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${key}`,
+      'Content-Type': 'application/json',
+      'X-Requested-With': 'XMLHttpRequest'
+    },
+    body: JSON.stringify({
+      model,
+      messages: [{ role: 'user', content: prompt }],
+      temperature: 0.7,
+      max_tokens: 4096
+    })
+  });
+
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error?.message || 'Groq API Error');
+  return data.choices?.[0]?.message?.content || 'কোনো উত্তর পাওয়া যায়নি।';
+}
+
+// ============================================================
+// GROQ RUN — with Gemini fallback explanation
+// ============================================================
+async function runGroq() {
+  const prompt = document.getElementById('groq-prompt').value.trim();
+  const model = document.getElementById('groq-model').value;
+  if (!prompt) { showToast('⚠️ প্রশ্ন লিখুন'); return; }
+
+  const key = getKey('groq_key');
+  if (!key) {
+    setOutput('groq-output', '❌ Groq API Key পাওয়া যায়নি!\n\nAPI Settings এ গিয়ে Groq key দিন।\nGroq free key পেতে: https://console.groq.com', 'error');
+    return;
+  }
+
+  setOutput('groq-output', '⚡ Groq চলছে...', 'loading');
+
+  try {
+    // Direct Groq call with proper headers
+    const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${key}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        model,
+        messages: [{ role: 'user', content: prompt }],
+        temperature: 0.7,
+        max_tokens: 4096
+      })
+    });
+
+    if (res.status === 0 || !res.ok) {
+      // CORS fallback — use Gemini to explain
+      const fallback = await callGemini('gemini-2.0-flash', [{
+        role: 'user',
+        parts: [{ text: `[Groq ${model} দিয়ে উত্তর দাও]: ${prompt}` }]
+      }]);
+      setOutput('groq-output', `⚠️ Groq CORS সমস্যা (browser limitation)। Gemini দিয়ে উত্তর:\n\n${fallback}`);
+      return;
+    }
+
+    const data = await res.json();
+    if (data.error) throw new Error(data.error.message);
+    const result = data.choices?.[0]?.message?.content || 'কোনো উত্তর পাওয়া যায়নি।';
+    setOutput('groq-output', `✅ [${model}]\n\n${result}`);
+  } catch (e) {
+    // If CORS error, use Gemini as fallback
+    if (e.message.includes('fetch') || e.message.includes('CORS') || e.message.includes('network')) {
+      try {
+        setOutput('groq-output', '⚠️ Groq browser CORS block। Gemini দিয়ে চেষ্টা করছি...', 'loading');
+        const fallback = await callGemini('gemini-2.0-flash', [{
+          role: 'user',
+          parts: [{ text: prompt }]
+        }]);
+        setOutput('groq-output', `⚠️ Groq CORS blocked (browser limitation)\nGemini fallback:\n\n${fallback}`);
+      } catch (e2) {
+        setOutput('groq-output', '❌ ' + e.message, 'error');
+      }
+    } else {
+      setOutput('groq-output', '❌ ' + e.message, 'error');
+    }
+  }
+}
+
+// Update SECTION_META for Groq
+SECTION_META['groq'] = { title: '⚡ Groq AI', model: 'llama3-70b-8192' };

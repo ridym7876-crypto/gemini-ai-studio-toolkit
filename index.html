@@ -28,6 +28,7 @@
       <button class="nav-item" onclick="showSection('tts')"><span class="material-icons">record_voice_over</span><span>Text to Speech</span></button>
       <button class="nav-item" onclick="showSection('search')"><span class="material-icons">travel_explore</span><span>Google Search</span></button>
       <button class="nav-item" onclick="showSection('huggingface')"><span class="material-icons">psychology</span><span>Hugging Face</span></button>
+      <button class="nav-item" onclick="showSection('groq')"><span class="material-icons">speed</span><span>Groq AI</span></button>
       <button class="nav-item" onclick="showSection('api-settings')"><span class="material-icons">settings</span><span>API Settings</span></button>
     </nav>
   </aside>
@@ -243,6 +244,30 @@
         <button class="btn-run" onclick="runHuggingFace()"><span class="material-icons">psychology</span> Run Model</button>
         <div class="output-box" id="hf-output">আউটপুট এখানে দেখাবে...</div>
         <button class="btn-copy" onclick="copyOutput('hf-output')"><span class="material-icons">content_copy</span> Copy</button>
+      </div>
+    </section>
+
+    <!-- ===== GROQ ===== -->
+    <section id="section-groq" class="section">
+      <div class="card">
+        <p class="desc">⚡ Groq — বিশ্বের সবচেয়ে দ্রুত AI inference! Llama 3, Mixtral, Gemma model চালান।</p>
+        <div class="form-group">
+          <label>Model বেছে নিন</label>
+          <select id="groq-model">
+            <option value="llama3-8b-8192">Llama 3 8B (দ্রুত)</option>
+            <option value="llama3-70b-8192">Llama 3 70B (শক্তিশালী)</option>
+            <option value="mixtral-8x7b-32768">Mixtral 8x7B</option>
+            <option value="gemma-7b-it">Gemma 7B</option>
+            <option value="llama-3.1-8b-instant">Llama 3.1 8B Instant</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>আপনার প্রশ্ন</label>
+          <textarea id="groq-prompt" placeholder="যেকোনো প্রশ্ন করুন..." rows="5"></textarea>
+        </div>
+        <button class="btn-run" onclick="runGroq()"><span class="material-icons">speed</span> Groq দিয়ে উত্তর নিন</button>
+        <div class="output-box" id="groq-output">আউটপুট এখানে দেখাবে...</div>
+        <button class="btn-copy" onclick="copyOutput('groq-output')"><span class="material-icons">content_copy</span> Copy</button>
       </div>
     </section>
 
