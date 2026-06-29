@@ -110,7 +110,7 @@ const SECTION_META = {
   'video': { title: '📹 Video Analyze', model: 'gemini-2.5-pro' },
   'fast': { title: '⚡ Fast Response', model: 'gemini-2.0-flash-lite' },
   'image-analyze': { title: '🔍 Image Analyze', model: 'gemini-2.5-pro' },
-  'image-gen': { title: '🖼️ Image Generate', model: 'imagen-3.0' },
+  'image-gen': { title: '🖼️ Image Generate', model: 'imagen-4.0' },
   'tts': { title: '🔊 Text to Speech', model: 'gemini-tts' },
   'search': { title: '🔍 Google Search', model: 'gemini + search' },
   'huggingface': { title: '🤗 Hugging Face', model: 'hf-inference' },
@@ -332,12 +332,13 @@ async function runImageAnalyze() {
 }
 
 // ============================================================
-// IMAGE GENERATE (Imagen 3)
+// IMAGE GENERATE (Imagen 4 + Gemini Flash Image)
 // ============================================================
 async function runImageGen() {
   const prompt = document.getElementById('img-gen-prompt').value.trim();
   const ratio = document.getElementById('img-ratio').value;
   const count = parseInt(document.getElementById('img-count').value);
+  const modelChoice = document.getElementById('img-gen-model') ? document.getElementById('img-gen-model').value : 'gemini-flash';
   if (!prompt) { showToast('⚠️ ছবির বিবরণ লিখুন'); return; }
 
   const key = getKey('gemini_key');
@@ -347,28 +348,57 @@ async function runImageGen() {
   grid.innerHTML = '<p style="color:var(--primary);padding:12px">⏳ ছবি তৈরি হচ্ছে...</p>';
 
   try {
-    const url = 'https://generativelanguage.googleapis.com/v1beta/models/imagen-3.0-generate-002:predict?key=' + key;
-    const res = await fetch(url, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        instances: [{ prompt: prompt }],
-        parameters: { sampleCount: count, aspectRatio: ratio, safetyFilterLevel: 'BLOCK_ONLY_HIGH' }
-      })
-    });
-    const data = await res.json();
-    if (!res.ok) throw new Error(data.error && data.error.message ? data.error.message : 'Imagen API Error');
+    if (modelChoice === 'imagen4') {
+      // Imagen 4 via predict endpoint
+      const url = 'https://generativelanguage.googleapis.com/v1beta/models/imagen-4.0-generate-001:predict?key=' + key;
+      const res = await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          instances: [{ prompt: prompt }],
+          parameters: { sampleCount: count, aspectRatio: ratio, safetyFilterLevel: 'BLOCK_ONLY_HIGH' }
+        })
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error && data.error.message ? data.error.message : 'Imagen 4 API Error');
 
-    grid.innerHTML = '';
-    (data.predictions || []).forEach(function(pred) {
-      if (pred.bytesBase64Encoded) {
-        const img = document.createElement('img');
-        img.src = 'data:image/png;base64,' + pred.bytesBase64Encoded;
-        img.onclick = function() { window.open(img.src); };
-        grid.appendChild(img);
-      }
-    });
-    if (!grid.children.length) grid.innerHTML = '<p style="color:var(--error)">কোনো ছবি পাওয়া যায়নি।</p>';
+      grid.innerHTML = '';
+      (data.predictions || []).forEach(function(pred) {
+        if (pred.bytesBase64Encoded) {
+          const img = document.createElement('img');
+          img.src = 'data:image/png;base64,' + pred.bytesBase64Encoded;
+          img.onclick = function() { window.open(img.src); };
+          grid.appendChild(img);
+        }
+      });
+      if (!grid.children.length) grid.innerHTML = '<p style="color:var(--error)">কোনো ছবি পাওয়া যায়নি।</p>';
+
+    } else {
+      // Gemini Flash Image via generateContent (more widely available)
+      const url = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent?key=' + key;
+      const res = await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          contents: [{ parts: [{ text: prompt }] }],
+          generationConfig: { responseModalities: ['TEXT', 'IMAGE'] }
+        })
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error && data.error.message ? data.error.message : 'Gemini Image API Error');
+
+      grid.innerHTML = '';
+      const parts = data.candidates && data.candidates[0] && data.candidates[0].content && data.candidates[0].content.parts || [];
+      parts.forEach(function(part) {
+        if (part.inlineData && part.inlineData.data) {
+          const img = document.createElement('img');
+          img.src = 'data:' + part.inlineData.mimeType + ';base64,' + part.inlineData.data;
+          img.onclick = function() { window.open(img.src); };
+          grid.appendChild(img);
+        }
+      });
+      if (!grid.children.length) grid.innerHTML = '<p style="color:var(--error)">কোনো ছবি পাওয়া যায়নি। অন্য model চেষ্টা করুন।</p>';
+    }
   } catch (e) {
     grid.innerHTML = '<p style="color:var(--error)">❌ ' + e.message + '</p>';
   }

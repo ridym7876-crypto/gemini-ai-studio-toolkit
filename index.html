@@ -150,7 +150,14 @@
     <!-- ===== IMAGE GENERATE ===== -->
     <section id="section-image-gen" class="section">
       <div class="card">
-        <p class="desc">🖼️ টেক্সট দিয়ে Imagen 3 দিয়ে ছবি তৈরি করুন।</p>
+        <p class="desc">🖼️ AI দিয়ে ছবি তৈরি করুন — Imagen 4 বা Gemini Flash Image।</p>
+        <div class="form-group">
+          <label>Image Model</label>
+          <select id="img-gen-model">
+            <option value="imagen4">Imagen 4 (সেরা মান)</option>
+            <option value="gemini-flash">Gemini Flash (দ্রুত)</option>
+          </select>
+        </div>
         <div class="form-group">
           <label>ছবির বিবরণ (English এ ভালো কাজ করে)</label>
           <textarea id="img-gen-prompt" placeholder="A beautiful sunset over mountains, photorealistic..." rows="4"></textarea>
